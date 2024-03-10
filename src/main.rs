@@ -48,18 +48,9 @@ impl MassGroup<'_> {
     }
 }
 
-fn count_confirmed_not_different(masses: &Vec<Mass>) -> usize {
-    let mut count = 0;
-    for mass in masses {
-        if mass.info == MassInfo::Same {
-            count += 1;
-        }
-    }
-    count
-}
-
 fn main() {
     let mut masses = Vec::new();
+    let mut confirmed_masses = Vec::new();
     for _ in 0..=12 {
         masses.push(Mass {
             weight: MassWeight::Same,
@@ -73,7 +64,8 @@ fn main() {
     let mut different_mass_found = false;
 
     while guesses > 0 && !different_mass_found {
-        let confirmed = count_confirmed_not_different(&masses);
+        println!("\n-------------------\n");
+        let confirmed = confirmed_masses.len();
         println!("Guesses left: {}\n", guesses);
         println!("Masses identified as not different: {}", confirmed);
 
@@ -129,25 +121,45 @@ fn main() {
             Balance::Balanced => {
                 println!("The masses are balanced");
                 for mass in group.masses.iter_mut() {
-                    mass.info = MassInfo::Same;
-                }
-                if count_confirmed_not_different(&masses) == 11 {
-                    different_mass_found = true;
+                    if mass.info != MassInfo::Same {
+                        mass.info = MassInfo::Same;
+                        confirmed_masses.push(mass.clone());
+                    }
                 }
             }
             Balance::NotBalanced => {
                 println!("The masses are not balanced");
                 for mass in masses_left_out {
-                    mass.info = MassInfo::Same;
+                    if mass.info != MassInfo::Same {
+                        mass.info = MassInfo::Same;
+                        confirmed_masses.push(mass.clone());
+                    }
                 }
                 if group_size == 2 && of_which_confirmed == 1 {
+                    if confirmed_masses.len() < 11 {
+                        println!("You got lucky! Not all masses were ruled out.");
+                    }
                     different_mass_found = true;
                 }
             }
         }
 
-        println!("\n-------------------\n");
+        if confirmed_masses.len() == 11 {
+            different_mass_found = true;
+        }
+
         guesses -= 1;
+    }
+
+    println!("\n-------------------\n");
+
+    println!(
+        "You successfully identified {} of the 12 masses as not different.",
+        confirmed_masses.len()
+    );
+
+    if guesses > 0 {
+        println!("You had {} guesses left over.", guesses);
     }
 
     if different_mass_found {
