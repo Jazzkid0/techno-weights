@@ -270,7 +270,14 @@ fn main() {
         print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
         println!("12 Masses Puzzle");
         println!("-------------------\n");
-        println!("Would you like to solve the puzzle manually or automatically?");
+
+        println!("There are 12 masses, one of which has a different weight to the rest.");
+        println!(
+            "After the 3 measurements on a set of scales, you must determine which mass this is."
+        );
+        println!("The masses are given letters: A B C D E F G H I J K L\n\n");
+
+        println!("Would you like to solve the puzzle manually or automatically (computer solves)?");
         println!("Type 'manual' or 'auto' and press Enter. (m or a works)");
         let method = get_input().trim().to_lowercase();
         if method.starts_with('m') {
