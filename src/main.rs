@@ -21,6 +21,7 @@ enum MassInfo {
 
 #[derive(Clone, Debug)]
 struct Mass {
+    name: char,
     weight: MassWeight,
     info: MassInfo,
 }
@@ -28,151 +29,119 @@ struct Mass {
 #[derive(PartialEq, Debug)]
 enum Balance {
     Balanced,
-    NotBalanced,
+    LeftHeavy,
+    RightHeavy,
 }
 
-#[derive(Debug)]
-struct MassGroup<'a> {
-    masses: Vec<&'a mut Mass>,
-    balanced: Balance,
-}
+fn select_masses(masses: &Vec<Mass>) -> Vec<Mass> {
+    let mut input = String::new();
+    input.clear();
+    std::io::stdin().read_line(&mut input).unwrap();
 
-impl MassGroup<'_> {
-    fn from_masses(masses: Vec<&mut Mass>) -> MassGroup {
-        let mut balanced = Balance::Balanced;
-        for mass in masses.as_slice().iter() {
-            if mass.weight == MassWeight::Different {
-                balanced = Balance::NotBalanced;
+    let mut masses_out = Vec::new();
+    for c in input.to_uppercase().chars() {
+        if c.is_alphabetic() {
+            if let Some(mass) = masses.iter().find(|m| m.name == c) {
+                masses_out.push(mass.clone());
             }
         }
-        MassGroup { masses, balanced }
     }
+    masses_out
+}
+
+fn get_mass_names(masses: &Vec<Mass>) -> String {
+    let mut names = String::new();
+    for mass in masses {
+        names.push(mass.name);
+    }
+    names
+}
+
+fn weigh(left: &Vec<Mass>, right: &Vec<Mass>) -> Balance {
+    let left_weight: i32 = left
+        .iter()
+        .map(|m| match m.weight {
+            MassWeight::Different => 1,
+            MassWeight::Same => 0,
+        })
+        .sum();
+    let right_weight: i32 = right
+        .iter()
+        .map(|m| match m.weight {
+            MassWeight::Different => 1,
+            MassWeight::Same => 0,
+        })
+        .sum();
+    if left_weight > right_weight {
+        Balance::LeftHeavy
+    } else if left_weight < right_weight {
+        Balance::RightHeavy
+    } else {
+        Balance::Balanced
+    }
+}
+
+fn get_answer(masses: &Vec<Mass>) -> String {
+    let mut answer = String::new();
+    for mass in masses {
+        if mass.weight == MassWeight::Different {
+            answer.push(mass.name);
+        }
+    }
+    answer
+}
+
+fn guess(masses: &Vec<Mass>) -> bool {
+    let mut input = String::new();
+    input.clear();
+    std::io::stdin().read_line(&mut input).unwrap();
+    input.trim().to_uppercase() == get_answer(masses)
 }
 
 fn main() {
     let mut masses = Vec::new();
-    let mut confirmed_masses = Vec::new();
-    for _ in 0..12 {
+    for c in 'A'..='L' {
         masses.push(Mass {
+            name: c,
             weight: MassWeight::Same,
             info: MassInfo::None,
         });
     }
-    let index_of_different = rand::thread_rng().gen_range(0..=12);
+    let index_of_different = rand::thread_rng().gen_range(0..12);
     masses[index_of_different as usize].weight = MassWeight::Different;
 
-    let mut guesses = 3;
-    let mut different_mass_found = false;
+    let mut measurements = 3;
 
-    while guesses > 0 && !different_mass_found {
+    while measurements > 0 {
         println!("\n-------------------\n");
-        let confirmed = confirmed_masses.len();
-        println!("Guesses left: {}\n", guesses);
-        println!("Masses identified as not different: {}", confirmed);
+        println!("Measurements left: {}", measurements);
 
-        let mut input = String::new();
-        let mut group_size = 13;
-        while group_size < 1 || group_size > 12 || group_size % 2 != 0 {
-            println!("How many masses do you want to weigh?");
-            input.clear();
-            std::io::stdin().read_line(&mut input).unwrap();
-            group_size = input.trim().parse().unwrap();
-        }
+        println!("Which masses would you like to put on the left side of the scale?");
+        let left_side = select_masses(&masses);
+        println!("Left side: {:?}", get_mass_names(&left_side));
 
-        let mut of_which_confirmed = 12;
-        while of_which_confirmed > confirmed {
-            println!("How many of the masses do you want to be from those you have previously confirmed as not different?");
-            input.clear();
-            std::io::stdin().read_line(&mut input).unwrap();
-            of_which_confirmed = input.trim().parse().unwrap();
-        }
+        println!("Which masses would you like to put on the right side of the scale?");
+        let right_side = select_masses(&masses);
+        println!("Right side: {:?}", get_mass_names(&right_side));
 
-        // sort the masses vector so that masses with mass.info == MassInfo::Same are at the beginning
-        masses.sort_by(|a, b| a.info.cmp(&b.info));
+        let balance = weigh(&left_side, &right_side);
 
-        let mut masses_to_weigh = Vec::new();
-        let mut masses_left_out = Vec::new();
-        let mut masses_to_add = group_size.clone();
-        let mut confirmed_to_add = of_which_confirmed.clone();
-        for mass in masses.iter_mut() {
-            match mass.info {
-                MassInfo::Same => {
-                    if confirmed_to_add > 0 && masses_to_add > 0 {
-                        masses_to_weigh.push(mass);
-                        confirmed_to_add -= 1;
-                        masses_to_add -= 1;
-                    } else {
-                        masses_left_out.push(mass);
-                    }
-                }
-                MassInfo::None => {
-                    if masses_to_add > 0 {
-                        masses_to_weigh.push(mass);
-                        masses_to_add -= 1;
-                    } else {
-                        masses_left_out.push(mass);
-                    }
-                }
-            }
-        }
-
-        let mut group = MassGroup::from_masses(masses_to_weigh);
-
-        match group.balanced {
-            Balance::Balanced => {
-                println!("The masses are balanced");
-                for mass in group.masses.iter_mut() {
-                    if mass.info == MassInfo::None {
-                        mass.info = MassInfo::Same;
-                        confirmed_masses.push(mass.clone());
-                    }
-                }
-            }
-            Balance::NotBalanced => {
-                println!("The masses are not balanced");
-                for mass in masses_left_out {
-                    if mass.info == MassInfo::None {
-                        mass.info = MassInfo::Same;
-                        confirmed_masses.push(mass.clone());
-                    }
-                }
-                if group_size == 2 && of_which_confirmed == 1 {
-                    if confirmed_masses.len() < 11 {
-                        println!("You got lucky! Not all masses were ruled out.");
-                    }
-                    different_mass_found = true;
-                }
-            }
-        }
-
-        if confirmed_masses.len() == 11 {
-            different_mass_found = true;
-        }
-
-        guesses -= 1;
-
-        // debug prints
-        println!("Masses to weigh: {:?}", group.masses);
-        println!("Confirmed masses: {:?}", confirmed_masses);
-        println!("Different mass found: {}", different_mass_found);
+        println!("The balance is: {:?}", balance);
+        measurements -= 1;
     }
 
     println!("\n-------------------\n");
 
-    println!(
-        "You successfully identified {} of the 12 masses as not different.",
-        confirmed_masses.len()
-    );
+    println!("You have no more measurements left.");
+    println!("What do you think the different mass is?");
 
-    if guesses > 0 {
-        println!("You had {} guesses left over.", guesses);
-    }
-
-    if different_mass_found {
+    if guess(&masses) {
         println!("You found the different mass!");
     } else {
-        println!("You did not find the different mass.");
+        println!("You didn't find the different mass.");
     }
+
+    println!("The different mass was: {}", get_answer(&masses));
 
     // wait for any key to exit
     println!("\nPress Enter to exit.");
