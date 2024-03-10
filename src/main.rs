@@ -98,7 +98,7 @@ fn guess(masses: &Vec<Mass>) -> bool {
     input.trim().to_uppercase() == get_answer(masses)
 }
 
-fn main() {
+fn manual_solve() {
     let mut masses = Vec::new();
     for c in 'A'..='L' {
         masses.push(Mass {
@@ -147,4 +147,8 @@ fn main() {
     println!("\nPress Enter to exit.");
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
+}
+
+fn main() {
+    manual_solve();
 }
