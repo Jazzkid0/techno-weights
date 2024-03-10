@@ -70,8 +70,9 @@ fn main() {
     masses[index_of_different as usize].weight = MassWeight::Different;
 
     let mut guesses = 3;
+    let mut different_mass_found = false;
 
-    while guesses > 0 {
+    while guesses > 0 && !different_mass_found {
         let confirmed = count_confirmed_not_different(&masses);
         println!("Guesses left: {}\n", guesses);
         println!("Masses identified as not different: {}", confirmed);
@@ -99,12 +100,13 @@ fn main() {
         let mut masses_to_weigh = Vec::new();
         let mut masses_left_out = Vec::new();
         let mut masses_to_add = group_size.clone();
+        let mut confirmed_to_add = of_which_confirmed.clone();
         for mass in masses.iter_mut() {
             match mass.info {
                 MassInfo::Same => {
-                    if of_which_confirmed > 0 && masses_to_add > 0 {
+                    if confirmed_to_add > 0 && masses_to_add > 0 {
                         masses_to_weigh.push(mass);
-                        of_which_confirmed -= 1;
+                        confirmed_to_add -= 1;
                         masses_to_add -= 1;
                     } else {
                         masses_left_out.push(mass);
@@ -123,15 +125,24 @@ fn main() {
 
         let mut group = MassGroup::from_masses(masses_to_weigh);
 
-        if group.balanced == Balance::Balanced {
-            println!("The masses are balanced");
-            for mass in group.masses.iter_mut() {
-                mass.info = MassInfo::Same;
+        match group.balanced {
+            Balance::Balanced => {
+                println!("The masses are balanced");
+                for mass in group.masses.iter_mut() {
+                    mass.info = MassInfo::Same;
+                }
+                if count_confirmed_not_different(&masses) == 11 {
+                    different_mass_found = true;
+                }
             }
-        } else {
-            println!("The masses are not balanced");
-            for mass in masses_left_out {
-                mass.info = MassInfo::Same;
+            Balance::NotBalanced => {
+                println!("The masses are not balanced");
+                for mass in masses_left_out {
+                    mass.info = MassInfo::Same;
+                }
+                if group_size == 2 && of_which_confirmed == 1 {
+                    different_mass_found = true;
+                }
             }
         }
 
@@ -139,10 +150,10 @@ fn main() {
         guesses -= 1;
     }
 
-    if count_confirmed_not_different(&masses) == 11 {
-        println!("You have found the different mass!");
+    if different_mass_found {
+        println!("You found the different mass!");
     } else {
-        println!("You have not found the different mass.");
+        println!("You did not find the different mass.");
     }
 
     // wait for any key to exit
