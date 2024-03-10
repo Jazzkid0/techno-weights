@@ -273,37 +273,42 @@ fn solve(method: SolveMethod, verbose: bool) -> GameResult {
 }
 
 fn main() {
-    println!("12 Masses Puzzle");
-    println!("-------------------\n");
-    println!("Would you like to solve the puzzle manually or automatically?");
-    println!("Type 'manual' or 'auto' and press Enter. (m or a works)");
-    let method = get_input().trim().to_lowercase();
-    if method.starts_with('m') {
-        solve(SolveMethod::Manual, true);
-    } else if method.starts_with('a') {
-        let mut record: Vec<GameResult> = Vec::new();
+    let mut startover = true;
+    while startover {
+        print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+        println!("12 Masses Puzzle");
+        println!("-------------------\n");
+        println!("Would you like to solve the puzzle manually or automatically?");
+        println!("Type 'manual' or 'auto' and press Enter. (m or a works)");
+        let method = get_input().trim().to_lowercase();
+        if method.starts_with('m') {
+            solve(SolveMethod::Manual, true);
+        } else if method.starts_with('a') {
+            let mut record: Vec<GameResult> = Vec::new();
 
-        println!("How many times should the computer solve the puzzle?");
-        let attempts = get_input().trim().parse::<i32>().unwrap();
+            println!("How many times should the computer solve the puzzle?");
+            let attempts = get_input().trim().parse::<i32>().unwrap();
 
-        println!("Would you like to see the steps? (y/n)");
-        let verbose = get_input().trim().to_lowercase();
-        if verbose.starts_with('y') {
-            for _ in 0..attempts {
-                record.push(solve(SolveMethod::Auto, true));
+            println!("Would you like to see the steps? (y/n)");
+            let verbose = get_input().trim().to_lowercase();
+            if verbose.starts_with('y') {
+                for _ in 0..attempts {
+                    record.push(solve(SolveMethod::Auto, true));
+                }
+            } else {
+                for _ in 0..attempts {
+                    record.push(solve(SolveMethod::Auto, false));
+                }
             }
+            println!("Results: {:?}", record);
         } else {
-            for _ in 0..attempts {
-                record.push(solve(SolveMethod::Auto, false));
-            }
+            println!("Invalid input.");
         }
-        println!("Results: {:?}", record);
-    } else {
-        println!("Invalid input.");
-    }
 
-    // wait for any key to exit
-    println!("\nPress Enter to exit.");
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input).unwrap();
+        println!("\n\nWould you like to start over? (y/anything else)");
+        let startover_input = get_input().trim().to_lowercase();
+        if !startover_input.starts_with('y') {
+            startover = false;
+        }
+    }
 }
