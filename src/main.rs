@@ -7,30 +7,31 @@
 
 use rand::Rng;
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 enum MassWeight {
     Different,
     Same,
 }
 
-#[derive(PartialEq, Clone, Ord, Eq, PartialOrd)]
+#[derive(PartialEq, Clone, Ord, Eq, PartialOrd, Debug)]
 enum MassInfo {
     Same,
     None,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct Mass {
     weight: MassWeight,
     info: MassInfo,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 enum Balance {
     Balanced,
     NotBalanced,
 }
 
+#[derive(Debug)]
 struct MassGroup<'a> {
     masses: Vec<&'a mut Mass>,
     balanced: Balance,
@@ -51,7 +52,7 @@ impl MassGroup<'_> {
 fn main() {
     let mut masses = Vec::new();
     let mut confirmed_masses = Vec::new();
-    for _ in 0..=12 {
+    for _ in 0..12 {
         masses.push(Mass {
             weight: MassWeight::Same,
             info: MassInfo::None,
@@ -121,7 +122,7 @@ fn main() {
             Balance::Balanced => {
                 println!("The masses are balanced");
                 for mass in group.masses.iter_mut() {
-                    if mass.info != MassInfo::Same {
+                    if mass.info == MassInfo::None {
                         mass.info = MassInfo::Same;
                         confirmed_masses.push(mass.clone());
                     }
@@ -130,7 +131,7 @@ fn main() {
             Balance::NotBalanced => {
                 println!("The masses are not balanced");
                 for mass in masses_left_out {
-                    if mass.info != MassInfo::Same {
+                    if mass.info == MassInfo::None {
                         mass.info = MassInfo::Same;
                         confirmed_masses.push(mass.clone());
                     }
@@ -149,6 +150,11 @@ fn main() {
         }
 
         guesses -= 1;
+
+        // debug prints
+        println!("Masses to weigh: {:?}", group.masses);
+        println!("Confirmed masses: {:?}", confirmed_masses);
+        println!("Different mass found: {}", different_mass_found);
     }
 
     println!("\n-------------------\n");
