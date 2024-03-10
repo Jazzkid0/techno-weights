@@ -117,7 +117,13 @@ fn setup_masses() -> Vec<Mass> {
     masses
 }
 
-fn manual_solve() {
+#[derive(Debug)]
+enum GameResult {
+    Win,
+    Lose,
+}
+
+fn manual_solve() -> GameResult {
     let masses = setup_masses();
     let mut measurements = 3;
 
@@ -148,16 +154,13 @@ fn manual_solve() {
 
     if guess(&masses) {
         println!("You found the different mass!");
+        println!("The different mass was: {}", get_answer(&masses));
+        return GameResult::Win;
     } else {
         println!("You didn't find the different mass.");
+        println!("The different mass was: {}", get_answer(&masses));
+        return GameResult::Lose;
     }
-
-    println!("The different mass was: {}", get_answer(&masses));
-
-    // wait for any key to exit
-    println!("\nPress Enter to exit.");
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input).unwrap();
 }
 
 fn ez_measure(masses: &Vec<Mass>, left: String, right: String, verbose: bool) -> Balance {
@@ -180,57 +183,127 @@ enum ResultComparison {
     Balanced,
 }
 
-fn compare_results(first: Balance, second: Balance) -> ResultComparison {
-    if second == Balance::Balanced {
+fn compare_results(first: &Balance, second: &Balance) -> ResultComparison {
+    if *second == Balance::Balanced {
         return ResultComparison::Balanced;
     } else if first == second {
         return ResultComparison::Same;
     } else {
         return ResultComparison::Opposite;
     }
+}
 
-    fn auto_solve(verbose: bool) {
-        let masses = setup_masses();
+fn auto_solve(verbose: bool) -> GameResult {
+    let masses = setup_masses();
 
-        let final_result: char;
+    let answer = get_answer(&masses);
+    let final_result: char;
 
-        let result_1 = ez_measure(&masses, "ABCD".to_string(), "EFGH".to_string(), verbose);
+    let result_1 = ez_measure(&masses, "ABCD".to_string(), "EFGH".to_string(), verbose);
 
-        match result_1 {
-            Balance::Balanced => {
-                let result_2 = ez_measure(&masses, "IJ".to_string(), "KA".to_string(), verbose);
-                match result_2 {
-                    Balance::Balanced => {
-                        final_result = 'L';
-                    }
-                    _ => {
-                        let result_3 =
-                            ez_measure(&masses, "JK".to_string(), "AB".to_string(), verbose);
-                        let comparison = compare_results(result_2, result_3);
-                        match comparison {
-                            ResultComparison::Balanced => {
-                                final_result = 'I';
-                            }
-                            ResultComparison::Same => {
-                                final_result = 'K';
-                            }
-                            ResultComparison::Opposite => {
-                                final_result = 'J';
-                            }
-                        }
+    match result_1 {
+        Balance::Balanced => {
+            let result_2 = ez_measure(&masses, "IJ".to_string(), "KA".to_string(), verbose);
+            match result_2 {
+                Balance::Balanced => final_result = 'L',
+                _ => {
+                    let result_3 = ez_measure(&masses, "JK".to_string(), "AB".to_string(), verbose);
+                    let comparison = compare_results(&result_2, &result_3);
+                    match comparison {
+                        ResultComparison::Balanced => final_result = 'I',
+                        ResultComparison::Same => final_result = 'J',
+                        ResultComparison::Opposite => final_result = 'K',
                     }
                 }
             }
-            _ => {}
         }
-        if final_result == get_answer(&masses).chars().next().unwrap() {
-            println!("You found the different mass!");
-        } else {
-            println!("You didn't find the different mass.");
+        _ => {
+            let result_2 = ez_measure(&masses, "ABE".to_string(), "CDF".to_string(), verbose);
+            match result_2 {
+                Balance::Balanced => {
+                    let result_3 = ez_measure(&masses, "G".to_string(), "I".to_string(), verbose);
+                    match result_3 {
+                        Balance::Balanced => final_result = 'H',
+                        _ => final_result = 'G',
+                    }
+                }
+                _ => {
+                    let result_3 = ez_measure(&masses, "ED".to_string(), "FB".to_string(), verbose);
+                    let comparisons = (
+                        compare_results(&result_1, &result_2),
+                        compare_results(&result_2, &result_3),
+                    );
+                    match comparisons {
+                        (ResultComparison::Same, ResultComparison::Balanced) => final_result = 'A',
+                        (ResultComparison::Same, ResultComparison::Same) => final_result = 'F',
+                        (ResultComparison::Same, ResultComparison::Opposite) => final_result = 'B',
+                        (ResultComparison::Opposite, ResultComparison::Balanced) => {
+                            final_result = 'C'
+                        }
+                        (ResultComparison::Opposite, ResultComparison::Same) => final_result = 'E',
+                        (ResultComparison::Opposite, ResultComparison::Opposite) => {
+                            final_result = 'D'
+                        }
+                        _ => panic!("This should never happen!"),
+                    }
+                }
+            }
         }
+    }
+    println!("Auto-solve result: {}", final_result);
+    println!("The different mass was: {}", answer);
+
+    if final_result == answer.chars().next().unwrap() {
+        return GameResult::Win;
+    } else {
+        return GameResult::Lose;
+    }
+}
+
+enum SolveMethod {
+    Manual,
+    Auto,
+}
+
+fn solve(method: SolveMethod, verbose: bool) -> GameResult {
+    match method {
+        SolveMethod::Manual => manual_solve(),
+        SolveMethod::Auto => auto_solve(verbose),
     }
 }
 
 fn main() {
-    manual_solve();
+    println!("12 Masses Puzzle");
+    println!("-------------------\n");
+    println!("Would you like to solve the puzzle manually or automatically?");
+    println!("Type 'manual' or 'auto' and press Enter. (m or a works)");
+    let method = get_input().trim().to_lowercase();
+    if method.starts_with('m') {
+        solve(SolveMethod::Manual, true);
+    } else if method.starts_with('a') {
+        let mut record: Vec<GameResult> = Vec::new();
+
+        println!("How many times should the computer solve the puzzle?");
+        let attempts = get_input().trim().parse::<i32>().unwrap();
+
+        println!("Would you like to see the steps? (y/n)");
+        let verbose = get_input().trim().to_lowercase();
+        if verbose.starts_with('y') {
+            for _ in 0..attempts {
+                record.push(solve(SolveMethod::Auto, true));
+            }
+        } else {
+            for _ in 0..attempts {
+                record.push(solve(SolveMethod::Auto, false));
+            }
+        }
+        println!("Results: {:?}", record);
+    } else {
+        println!("Invalid input.");
+    }
+
+    // wait for any key to exit
+    println!("\nPress Enter to exit.");
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).unwrap();
 }
