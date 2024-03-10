@@ -2,4 +2,4 @@
 
 Just a dumb game made in the early hours to play with a small puzzle
 
-Might make a brute force solver if I feel like it
+The computer can play it for you, but it always wins.
