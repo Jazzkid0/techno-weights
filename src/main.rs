@@ -13,7 +13,7 @@ enum MassWeight {
     Same,
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Ord, Eq, PartialOrd)]
 enum MassInfo {
     Same,
     None,
@@ -93,6 +93,9 @@ fn main() {
             of_which_confirmed = input.trim().parse().unwrap();
         }
 
+        // sort the masses vector so that masses with mass.info == MassInfo::Same are at the beginning
+        masses.sort_by(|a, b| a.info.cmp(&b.info));
+
         let mut masses_to_weigh = Vec::new();
         let mut masses_left_out = Vec::new();
         let mut masses_to_add = group_size.clone();
@@ -141,4 +144,9 @@ fn main() {
     } else {
         println!("You have not found the different mass.");
     }
+
+    // wait for any key to exit
+    println!("\nPress Enter to exit.");
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).unwrap();
 }
