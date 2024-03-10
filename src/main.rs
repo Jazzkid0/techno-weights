@@ -15,17 +15,10 @@ enum MassWeight {
     Same,
 }
 
-#[derive(PartialEq, Clone, Ord, Eq, PartialOrd, Debug)]
-enum MassInfo {
-    Same,
-    None,
-}
-
 #[derive(Clone, Debug)]
 struct Mass {
     name: char,
     weight: MassWeight,
-    info: MassInfo,
 }
 
 #[derive(PartialEq, Debug)]
@@ -109,7 +102,6 @@ fn setup_masses() -> Vec<Mass> {
         masses.push(Mass {
             name: c,
             weight: MassWeight::Same,
-            info: MassInfo::None,
         });
     }
     let index_of_different = rand::thread_rng().gen_range(0..12);
